@@ -1,0 +1,6 @@
+{
+  "name": "LALA-demo",
+  "description": "Interactive AI Language Learning & Conversation Assistant Demo with real-time roleplay, pronunciation practice, and expression builder.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
