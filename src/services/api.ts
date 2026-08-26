@@ -1,108 +1,59 @@
-import { ChatMessage, PolishData, PronunciationData, QuizResult, VocabularyCard } from '../types';
+import type { Language } from '../data';
 
-export async function fetchChatReply(params: {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-  targetLanguage: string;
-  nativeLanguage: string;
-  scenario: string;
-  partnerRole: string;
-  userLevel: string;
-}): Promise<{
-  reply: string;
-  translation: string;
-  userFeedback: {
-    hasCorrection: boolean;
-    originalSegment?: string;
-    improvedVersion: string;
-    explanation: string;
-    nuanceTag?: string;
+export interface DocentInput {
+  placeName: string;
+  region: string;
+  language: Language;
+  evidence: {
+    reason: string;
+    source: string;
+    dataAsOf: string;
   };
-  suggestedReplies: string[];
-  keyVocabulary: Array<{
-    word: string;
-    phonetic?: string;
-    meaning: string;
-    example?: string;
-  }>;
-}> {
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    throw new Error(`Chat API failed with status ${res.status}`);
-  }
-  const json = await res.json();
-  return json.data;
 }
 
-export async function evaluatePronunciation(params: {
-  phrase: string;
-  targetLanguage: string;
-  nativeLanguage: string;
-}): Promise<PronunciationData> {
-  const res = await fetch('/api/pronunciation-evaluate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    throw new Error(`Pronunciation API failed with status ${res.status}`);
-  }
-  const json = await res.json();
-  return json.data;
+interface DocentResponse {
+  success?: boolean;
+  error?: string;
+  data?: { script?: string };
 }
 
-export async function polishSentence(params: {
-  text: string;
-  targetLanguage: string;
-  nativeLanguage: string;
-}): Promise<PolishData> {
-  const res = await fetch('/api/polish', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    throw new Error(`Polish API failed with status ${res.status}`);
-  }
-  const json = await res.json();
-  return json.data;
+interface HealthResponse {
+  status?: string;
+  gemini?: string;
 }
 
-export async function generateWordLab(params: {
-  topic: string;
-  targetLanguage: string;
-  nativeLanguage: string;
-  count?: number;
-}): Promise<{ topicOverview: string; cards: VocabularyCard[] }> {
-  const res = await fetch('/api/word-lab', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    throw new Error(`Word Lab API failed with status ${res.status}`);
+export class DocentApiError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly status: number,
+  ) {
+    super(code);
+    this.name = 'DocentApiError';
   }
-  const json = await res.json();
-  return json.data;
 }
 
-export async function generateQuiz(params: {
-  topic: string;
-  targetLanguage: string;
-  nativeLanguage: string;
-  level?: string;
-}): Promise<QuizResult> {
-  const res = await fetch('/api/quiz', {
+export async function isGeminiConfigured(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/health');
+    if (!response.ok) return false;
+    const payload = (await response.json()) as HealthResponse;
+    return payload.status === 'ok' && payload.gemini === 'configured';
+  } catch {
+    return false;
+  }
+}
+
+export async function generateDocent(input: DocentInput): Promise<string> {
+  const response = await fetch('/api/docent', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: JSON.stringify(input),
   });
-  if (!res.ok) {
-    throw new Error(`Quiz API failed with status ${res.status}`);
+
+  const payload = (await response.json().catch(() => ({}))) as DocentResponse;
+  if (!response.ok || !payload.success || !payload.data?.script) {
+    throw new DocentApiError(payload.error || 'docent_request_failed', response.status);
   }
-  const json = await res.json();
-  return json.data;
+
+  return payload.data.script;
 }
