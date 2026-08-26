@@ -8,6 +8,7 @@ export const apiRouter = express.Router();
 
 const supportedLanguages = new Set(['ko', 'en', 'ja', 'zh-CN', 'zh-TW']);
 const defaultModel = 'gemini-3.7-flash';
+const modelRequestTimeoutMs = 20_000;
 
 interface DocentRequest {
   placeName?: unknown;
@@ -67,6 +68,7 @@ apiRouter.post('/docent', async (req, res) => {
       model,
       contents: `Create a short visitor-facing docent script from this evidence only:\n${JSON.stringify(evidence)}`,
       config: {
+        httpOptions: { timeout: modelRequestTimeoutMs },
         systemInstruction: [
           'You are the evidence-first LALA travel docent.',
           `Write only in the requested locale: ${language}.`,
