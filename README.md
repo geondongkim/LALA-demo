@@ -67,3 +67,7 @@ package start command selected by the AI Studio buildpack).
 4. Deploy to Cloud Run from AI Studio.
 5. After deployment, verify the health endpoint and click the Gemini docent
    action once. Do not expose the secret in browser developer tools.
+
+The verified end-to-end procedure, observed AI Studio behavior, deployment
+checks, and troubleshooting notes are in
+[`docs/ai-studio-cloud-run-hands-on.md`](docs/ai-studio-cloud-run-hands-on.md).
