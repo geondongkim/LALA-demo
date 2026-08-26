@@ -1,24 +1,25 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
 import { apiRouter } from './api-handler';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
-const PORT = 3000;
+const requestedPort = Number.parseInt(process.env.PORT ?? '8080', 10);
+const port = Number.isInteger(requestedPort) && requestedPort > 0 ? requestedPort : 8080;
+const distPath = path.resolve(process.cwd(), 'dist', 'public');
 
-app.use(express.json({ limit: '10mb' }));
+app.disable('x-powered-by');
+app.use(express.json({ limit: '32kb' }));
 app.use('/api', apiRouter);
-
-const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
-app.get('*', (req, res) => {
+app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`LALA-demo server running on http://0.0.0.0:${PORT}`);
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`LALA-demo server listening on port ${port}`);
+});
+
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0));
 });
